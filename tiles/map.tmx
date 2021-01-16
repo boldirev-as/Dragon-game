@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.4" tiledversion="2020.12.18" orientation="orthogonal" renderorder="right-down" width="64" height="40" tilewidth="32" tileheight="32" infinite="0" nextlayerid="6" nextobjectid="1">
+ <tileset firstgid="1" source="hyptosis_tile-art-batch-1-removebg.tsx"/>
+ <layer id="4" name="Слой тайлов 3" width="64" height="40">
+  <data encoding="base64" compression="zlib">
+   eJzt1jEKACAIQFHp/hfOqQu0RYn0hrd/RNAcEXnBbGLX26kfTth1ftftZr2YR3VDNT8BAAAAAAAAAJ0s1GHOpw==
+  </data>
+ </layer>
+ <layer id="3" name="Слой тайлов 2" width="64" height="40">
+  <data encoding="base64" compression="zlib">
+   eJzt1zlSAmEUReGfVtEIxHWA4DaYTHAXkgBrUWAFDkDkwAqYNBJhBahAJMgCOFWmRh2A9Lun6su5VHW/aueUUuq3m5Bzt7jDPRpoohXa9i/bTB12dtFDHwO84NXI/gk7P/CJL0wxw9zIfs9zbg/7OEAYhzjytv3L1H+qwPNwYeSZ+KsS28uoGP4PglQKZz4FoTzOfQpClyj6pHa3K97f16iihrqx9/kDex/xhGe0je1/Y+8Q7xhhbGz/N3sXWOIHK2P7I3zXRHGMGE6MfefE2ZvAKZJIGdufZm8GWeSQN7Zf90/3T/dP90/3T/fP4v1TSimllFK2WgMn5UU7
+  </data>
+ </layer>
+ <layer id="1" name="Слой тайлов 1" width="64" height="40">
+  <data encoding="base64" compression="zlib">
+   eJztwQENAAAAwqD3T20ON6AAAAAAAAAAAACANwMoAAAB
+  </data>
+ </layer>
+</map>
