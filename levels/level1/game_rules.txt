@@ -1,0 +1,4 @@
+start_character_pos;3,13
+enemy_pos1;41,13
+enemy1_start;58,13
+enemy1_stop;52,32
