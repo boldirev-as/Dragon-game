@@ -1,3 +1,7 @@
+import os
+import random
+import sys
+
 import pygame
 from constants import *
 import pytmx
@@ -127,6 +131,32 @@ class Hero:
         pygame.draw.circle(screen, (255, 255, 255), center, radius=TILE_SIZE // 2)
 
 
+class AnimatedSprite(pygame.sprite.Sprite):
+    def __init__(self, sheet, columns, rows, x, y):
+        super().__init__(all_sprites)
+        self.frames = []
+        self.cut_sheet(sheet, columns, rows)
+        self.cur_frame = 0
+        self.image = self.frames[self.cur_frame]
+        self.rect = self.rect.move(x, y)
+
+    def cut_sheet(self, sheet, columns, rows):
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
+                                sheet.get_height() // rows)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames.append(sheet.subsurface(pygame.Rect(
+                    frame_location, self.rect.size)))
+
+    def update(self):
+        self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+        self.image = self.frames[self.cur_frame]
+
+    def move(self, koeffs, hero):
+        self.rect.update(hero.x * TILE_SIZE + koeffs[0], hero.y * TILE_SIZE + koeffs[1], 30, 30)
+
+
 class Game:
 
     def __init__(self, field, hero, config, enemy):
@@ -145,7 +175,7 @@ class Game:
             self.enemy_start = not self.enemy_start
 
         self.lab.render(screen, koeff)
-        self.hero.render(screen, koeff)
+        # self.hero.render(screen, koeff)
         self.enemy.render(screen, koeff)
         self.config.render(screen, koeff)
 
@@ -182,6 +212,13 @@ class Game:
                                                     self.hero.get_position())
             self.enemy.set_position(next_position)
 
+    def check_win(self):
+        return self.lab.get_tile_id(self.hero.get_position()) == \
+               self.lab.finish_tile
+
+    def check_lose(self):
+        return self.hero.get_position() == self.enemy.get_position()
+
 
 class Camera:
     # зададим начальный сдвиг камеры
@@ -195,37 +232,122 @@ class Camera:
         self.dy += -(target.y * TILE_SIZE + self.dy + TILE_SIZE - WINDOW_HEIGHT // 2)
 
 
+def show_message(screen, message):
+    font = pygame.font.Font(None, 50)
+    text = font.render(message, True, (50, 70, 0))
+    text_x = WINDOW_WIDTH // 2 - text.get_width() // 2
+    text_y = WINDOW_HEIGHT // 2 - text.get_height() // 2
+    text_w = text.get_width()
+    text_h = text.get_height()
+    pygame.draw.rect(screen, (200, 150, 50), (text_x - 10, text_y - 10,
+                                              text_w + 20, text_h + 20))
+    screen.blit(text, (text_x, text_y))
+
+
+def load_image(name, colorkey=None):
+    fullname = name
+    # если файл не существует, то выходим
+    if not os.path.isfile(fullname):
+        print(f"Файл с изображением '{fullname}' не найден")
+        sys.exit()
+    image = pygame.image.load(fullname)
+    if colorkey is not None:
+        image = image.convert()
+        if colorkey == -1:
+            colorkey = image.get_at((0, 0))
+        image.set_colorkey(colorkey)
+    return image
+
+
+screen_rect = (0, 0, WINDOW_WIDTH, WINDOW_HEIGHT)
+
+
+class Particle(pygame.sprite.Sprite):
+    # сгенерируем частицы разного размера
+    fire = [load_image("grafic/star.png")]
+    for scale in (5, 10, 20):
+        fire.append(pygame.transform.scale(fire[0], (scale, scale)))
+
+    def __init__(self, pos, dx, dy):
+        super().__init__(all_sprites)
+        self.image = random.choice(self.fire)
+        self.rect = self.image.get_rect()
+
+        # у каждой частицы своя скорость — это вектор
+        self.velocity = [dx, dy]
+        # и свои координаты
+        self.rect.x, self.rect.y = pos
+
+        # гравитация будет одинаковой (значение константы)
+        self.gravity = GRAVITY
+
+    def update(self):
+        # применяем гравитационный эффект:
+        # движение с ускорением под действием гравитации
+        self.velocity[1] += self.gravity
+        # перемещаем частицу
+        self.rect.x += self.velocity[0]
+        self.rect.y += self.velocity[1]
+        # убиваем, если частица ушла за экран
+        if not self.rect.colliderect(screen_rect):
+            self.kill()
+
+
+def create_particles(position):
+    # количество создаваемых частиц
+    particle_count = 20
+    # возможные скорости
+    numbers = range(-5, 6)
+    for _ in range(particle_count):
+        Particle(position, random.choice(numbers), random.choice(numbers))
+
+
 def main():
     pygame.display.set_caption('Coronavirus')
     screen = pygame.display.set_mode(WINDOW_SIZE)
 
-    field = GameField("map.tmx", [78, 79, 80, 48, 49, 50, 108, 109, 110], 0)
+    field = GameField("map.tmx", [78, 79, 80, 48, 49, 50, 108, 109, 110, 101], 101)
     hero = Hero((3, 13))
     config = Configurator("config.tmx")
     enemy = Enemy(game_rules_list["enemy_pos1"], game_rules_list["enemy1_start"],
                   game_rules_list["enemy1_stop"])
+    dragon = AnimatedSprite(load_image("grafic\hero.png", -1), 8, 2, 3 * TILE_SIZE, 13 * TILE_SIZE)
     game = Game(field, hero, config, enemy)
     camera = Camera()
 
     running = True
+    game_over = False
     clock = pygame.time.Clock()
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if event.type == ENEMY_EVENT_TYPE:
+            if event.type == ENEMY_EVENT_TYPE and not game_over:
                 game.move_enemy()
         screen.fill((229, 213, 164))
-
-        game.update_hero()
+        if not game_over:
+            game.update_hero()
         game.render(screen, (camera.dx, camera.dy))
         game.update_conf()
         camera.update(hero)
-
+        dragon.move((camera.dx, camera.dy), hero)
+        all_sprites.update()
+        all_sprites.draw(screen)
+        if game.check_win():
+            game_over = True
+            show_message(screen, "You won!")
+            create_particles((WINDOW_WIDTH // 2, 0))
+        if game.check_lose():
+            game_over = True
+            show_message(screen, "You lost!")
         clock.tick(FPS)
         pygame.display.flip()
     pygame.quit()
 
 
 if __name__ == '__main__':
+    pygame.mixer.init()
+    pygame.mixer.music.load('sounds/soundtrack1.mp3')
+    pygame.mixer.music.play(-1)
+    all_sprites = pygame.sprite.Group()
     main()
