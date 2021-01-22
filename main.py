@@ -3,19 +3,10 @@ import random
 import sys
 
 import pygame
-from constants import *
+import pygame_gui
 import pytmx
 
-pygame.init()
-current_level = "level1"
-infoObject = pygame.display.Info()
-WINDOW_SIZE = WINDOW_WIDTH, WINDOW_HEIGHT = infoObject.current_w, infoObject.current_h - 60
-game_rules = open(f"{MAPS_DIR}/{current_level}/game_rules.txt",
-                  mode="r", encoding="utf8")
-game_rules_list = dict()
-for line in game_rules.readlines():
-    line = line.split(";")
-    game_rules_list[line[0]] = list(map(int, line[1].strip("\n").split(",")))
+from constants import *
 
 
 class GameField:
@@ -259,9 +250,6 @@ def load_image(name, colorkey=None):
     return image
 
 
-screen_rect = (0, 0, WINDOW_WIDTH, WINDOW_HEIGHT)
-
-
 class Particle(pygame.sprite.Sprite):
     # сгенерируем частицы разного размера
     fire = [load_image("grafic/star.png")]
@@ -295,11 +283,54 @@ class Particle(pygame.sprite.Sprite):
 
 def create_particles(position):
     # количество создаваемых частиц
-    particle_count = 20
+    particle_count = 10
     # возможные скорости
     numbers = range(-5, 6)
     for _ in range(particle_count):
         Particle(position, random.choice(numbers), random.choice(numbers))
+
+
+def menu(status, screen):
+
+    def hide(wdgts, hide):
+        for wdg in wdgts:
+            wdg.hide() if hide else wdg.show()
+
+    PAUSE_BTNS = [btn_resume, btn_close, btn_menu, btn_volume]
+    WIN_BTNS = []
+    LOSE_BTNS = []
+    MENU_BTNS = []
+    if status == GAME:
+        media_player.play(0)
+        hide(PAUSE_BTNS + WIN_BTNS + LOSE_BTNS + MENU_BTNS, hide=True)
+        hide([btn_pause], hide=False)
+    else:
+        image = load_image("grafic/background.png", -1)
+        screen.blit(image, (WINDOW_WIDTH // 2 - image.get_width() // 2,
+                            WINDOW_HEIGHT // 2 - image.get_height() // 2))
+        if status == PAUSE:
+            hide(PAUSE_BTNS, hide=False)
+            hide(WIN_BTNS + LOSE_BTNS + MENU_BTNS + [btn_pause], hide=True)
+        if status == MENU:
+            media_player.play(1)
+
+
+class Player:
+
+    def __init__(self, musics):
+        self.musics = musics
+        self.play_music = [False] * len(self.musics)
+
+    def play(self, i):
+        if self.play_music[i] is False:
+            self.play_music = [False] * len(self.musics)
+            self.all_stop()
+            self.play_music[i] = True
+            self.musics[i].play(-1)
+
+    def all_stop(self):
+        for music in self.musics:
+            music.stop()
 
 
 def main():
@@ -315,24 +346,53 @@ def main():
     game = Game(field, hero, config, enemy)
     camera = Camera()
 
+    btn_close.hide()
+    btn_resume.hide()
+
     running = True
     game_over = False
+    pause = False
+    status = GAME
     clock = pygame.time.Clock()
     while running:
+        time_delta = clock.tick(60) / 1000.0
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if event.type == ENEMY_EVENT_TYPE and not game_over:
+            if event.type == ENEMY_EVENT_TYPE and not (game_over or pause):
                 game.move_enemy()
+            if event.type == pygame.USEREVENT:
+                if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
+                    if event.ui_element == btn_pause:
+                        pause = True
+                        status = PAUSE
+                    if event.ui_element == btn_resume:
+                        pause = False
+                        status = GAME
+                    if event.ui_element == btn_close:
+                        running = False
+                    if event.ui_element == btn_menu:
+                        status = MENU
+
+            manager.process_events(event)
+        manager.update(time_delta)
+
         screen.fill((229, 213, 164))
-        if not game_over:
+
+        if not game_over and not pause:
             game.update_hero()
+        if not pause:
+            game.update_conf()
+            camera.update(hero)
+            dragon.move((camera.dx, camera.dy), hero)
+
         game.render(screen, (camera.dx, camera.dy))
-        game.update_conf()
-        camera.update(hero)
-        dragon.move((camera.dx, camera.dy), hero)
-        all_sprites.update()
         all_sprites.draw(screen)
+        all_sprites.update()
+
+        menu(status, screen)
+        manager.draw_ui(screen)
+
         if game.check_win():
             game_over = True
             show_message(screen, "You won!")
@@ -340,6 +400,7 @@ def main():
         if game.check_lose():
             game_over = True
             show_message(screen, "You lost!")
+
         clock.tick(FPS)
         pygame.display.flip()
     pygame.quit()
@@ -347,7 +408,54 @@ def main():
 
 if __name__ == '__main__':
     pygame.mixer.init()
-    pygame.mixer.music.load('sounds/soundtrack1.mp3')
-    pygame.mixer.music.play(-1)
+    game_sound = pygame.mixer.Sound('sounds/soundtrack1.mp3')
+    menu_sound = pygame.mixer.Sound('sounds/menu.mp3')
+    media_player = Player([game_sound, menu_sound])
+    pygame.init()
+
+    current_level = "level1"
+    infoObject = pygame.display.Info()
+    WINDOW_SIZE = WINDOW_WIDTH, WINDOW_HEIGHT = infoObject.current_w, infoObject.current_h
+    screen_rect = (0, 0, WINDOW_WIDTH, WINDOW_HEIGHT)
+    game_rules = open(f"{MAPS_DIR}/{current_level}/game_rules.txt",
+                      mode="r", encoding="utf8")
+    game_rules_list = dict()
+    for line in game_rules.readlines():
+        line = line.split(";")
+        game_rules_list[line[0]] = list(map(int, line[1].strip("\n").split(",")))
+
     all_sprites = pygame.sprite.Group()
+
+    manager = pygame_gui.UIManager(WINDOW_SIZE)
+
+    btn_pause = pygame_gui.elements.UIButton(
+        relative_rect=pygame.Rect((WINDOW_WIDTH - 70, 0), (70, 70)),
+        text="Pause",
+        manager=manager
+    )
+
+    btn_resume = pygame_gui.elements.UIButton(
+        relative_rect=pygame.Rect((WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT // 2 + 100), (200, 70)),
+        text="Resume play",
+        manager=manager
+    )
+
+    btn_close = pygame_gui.elements.UIButton(
+        relative_rect=pygame.Rect((WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT // 2 - 200), (200, 70)),
+        text="Close game",
+        manager=manager
+    )
+
+    btn_menu = pygame_gui.elements.UIButton(
+        relative_rect=pygame.Rect((WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT // 2), (200, 70)),
+        text="Menu",
+        manager=manager
+    )
+
+    btn_volume = pygame_gui.elements.UIButton(
+        relative_rect=pygame.Rect((WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT // 2 - 100), (200, 70)),
+        text="Volume",
+        manager=manager
+    )
+
     main()
