@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.4" tiledversion="2020.12.18" orientation="orthogonal" renderorder="right-down" width="7" height="4" tilewidth="32" tileheight="32" infinite="0" nextlayerid="2" nextobjectid="1">
+ <tileset firstgid="1" source="hyptosis_tile-art-batch-1-removebg.tsx"/>
+ <layer id="1" name="Слой тайлов 1" width="7" height="4">
+  <data encoding="csv">
+424,425,426,427,428,429,430,
+454,455,456,457,458,459,460,
+484,485,486,487,488,489,490,
+514,515,124,95,96,519,520
+</data>
+ </layer>
+</map>

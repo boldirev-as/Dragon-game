@@ -150,10 +150,9 @@ class AnimatedSprite(pygame.sprite.Sprite):
 
 class Game:
 
-    def __init__(self, field, hero, config, enemy):
+    def __init__(self, field, hero, enemy):
         self.lab = field
         self.hero = hero
-        self.config = config
         self.enemy = enemy
         self.enemy_start = False
 
@@ -168,7 +167,6 @@ class Game:
         self.lab.render(screen, koeff)
         # self.hero.render(screen, koeff)
         self.enemy.render(screen, koeff)
-        self.config.render(screen, koeff)
 
     def update_hero(self):
         next_x, next_y = self.hero.get_position()
@@ -183,19 +181,6 @@ class Game:
 
         if self.lab.is_free((next_x, next_y)):
             self.hero.set_position((next_x, next_y))
-
-    def update_conf(self):
-        direction_x = (self.hero.x * TILE_SIZE) - self.config.x
-        if abs(direction_x) > 100:
-            self.config.x += 100 // FPS * (1 if direction_x > 0 else -1)
-        elif abs(direction_x) < 90:
-            self.config.x -= 100 // FPS * (1 if direction_x > 0 else -1)
-
-        direction_y = (self.hero.y * TILE_SIZE) - self.config.y
-        if abs(direction_y) > 300:
-            self.config.y += 100 // FPS * (1 if direction_y > 0 else -1)
-        elif abs(direction_y) < 250:
-            self.config.y -= 100 // FPS * (1 if direction_y > 0 else -1)
 
     def move_enemy(self):
         if self.enemy_start:
@@ -223,11 +208,14 @@ class Camera:
         self.dy += -(target.y * TILE_SIZE + self.dy + TILE_SIZE - WINDOW_HEIGHT // 2)
 
 
-def show_message(screen, message):
+def show_message(screen, message, cords=None):
     font = pygame.font.Font(None, 50)
     text = font.render(message, True, (50, 70, 0))
-    text_x = WINDOW_WIDTH // 2 - text.get_width() // 2
-    text_y = WINDOW_HEIGHT // 2 - text.get_height() // 2
+    if cords is None:
+        text_x = WINDOW_WIDTH // 2 - text.get_width() // 2
+        text_y = WINDOW_HEIGHT // 2 - text.get_height() // 2
+    else:
+        text_x, text_y = cords[0], cords[1]
     text_w = text.get_width()
     text_h = text.get_height()
     pygame.draw.rect(screen, (200, 150, 50), (text_x - 10, text_y - 10,
@@ -257,7 +245,7 @@ class Particle(pygame.sprite.Sprite):
         fire.append(pygame.transform.scale(fire[0], (scale, scale)))
 
     def __init__(self, pos, dx, dy):
-        super().__init__(all_sprites)
+        super().__init__(effects_sprites)
         self.image = random.choice(self.fire)
         self.rect = self.image.get_rect()
 
@@ -296,23 +284,36 @@ def menu(status, screen):
         for wdg in wdgts:
             wdg.hide() if hide else wdg.show()
 
-    PAUSE_BTNS = [btn_resume, btn_close, btn_menu, btn_volume]
-    WIN_BTNS = []
-    LOSE_BTNS = []
-    MENU_BTNS = []
+    pause_btns = [btn_resume, btn_close, btn_menu, btn_volume]
+    win_btns = [btn_menu_for_win]
+    lose_btns = [btn_menu_for_lost]
+    menu_btns = [*levels_btns, btn_settings, btn_close_game]
     if status == GAME:
         media_player.play(0)
-        hide(PAUSE_BTNS + WIN_BTNS + LOSE_BTNS + MENU_BTNS, hide=True)
+        hide(pause_btns + win_btns + lose_btns + menu_btns, hide=True)
         hide([btn_pause], hide=False)
-    else:
+    elif status == WIN:
+        media_player.play(3)
+        show_message(screen, "YOU WIN!")
+        hide(pause_btns + lose_btns + menu_btns + [btn_pause], hide=True)
+        hide(win_btns, hide=False)
+        create_particles((WINDOW_WIDTH // 2, 0))
+    elif status == LOSE:
+        media_player.play(2)
+        show_message(screen, "YOU LOST!")
+        hide(pause_btns + win_btns + menu_btns + [btn_pause], hide=True)
+        hide(lose_btns, hide=False)
+    elif status == MENU:
+        show_message(screen, "LEVELS", cords=(WINDOW_WIDTH // 2, 30))
+        hide(pause_btns + win_btns + menu_btns + lose_btns + [btn_pause], hide=True)
+        hide(menu_btns, hide=False)
+        media_player.play(1)
+    elif status == PAUSE:
         image = load_image("grafic/background.png", -1)
         screen.blit(image, (WINDOW_WIDTH // 2 - image.get_width() // 2,
                             WINDOW_HEIGHT // 2 - image.get_height() // 2))
-        if status == PAUSE:
-            hide(PAUSE_BTNS, hide=False)
-            hide(WIN_BTNS + LOSE_BTNS + MENU_BTNS + [btn_pause], hide=True)
-        if status == MENU:
-            media_player.play(1)
+        hide(pause_btns, hide=False)
+        hide(win_btns + lose_btns + menu_btns + [btn_pause], hide=True)
 
 
 class Player:
@@ -338,93 +339,103 @@ def main():
     screen = pygame.display.set_mode(WINDOW_SIZE)
 
     field = GameField("map.tmx", [78, 79, 80, 48, 49, 50, 108, 109, 110, 101], 101)
-    hero = Hero((3, 13))
-    config = Configurator("config.tmx")
+    hero = Hero(game_rules_list["start_character_pos"])
     enemy = Enemy(game_rules_list["enemy_pos1"], game_rules_list["enemy1_start"],
                   game_rules_list["enemy1_stop"])
     dragon = AnimatedSprite(load_image("grafic\hero.png", -1), 8, 2, 3 * TILE_SIZE, 13 * TILE_SIZE)
-    game = Game(field, hero, config, enemy)
+    game = Game(field, hero, enemy)
     camera = Camera()
 
-    btn_close.hide()
-    btn_resume.hide()
-
     running = True
-    game_over = False
-    pause = False
-    status = GAME
+    status = MENU
     clock = pygame.time.Clock()
     while running:
         time_delta = clock.tick(60) / 1000.0
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if event.type == ENEMY_EVENT_TYPE and not (game_over or pause):
+            if event.type == ENEMY_EVENT_TYPE and status == GAME:
                 game.move_enemy()
             if event.type == pygame.USEREVENT:
                 if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
                     if event.ui_element == btn_pause:
-                        pause = True
                         status = PAUSE
                     if event.ui_element == btn_resume:
-                        pause = False
                         status = GAME
-                    if event.ui_element == btn_close:
+                    if event.ui_element in (btn_close, btn_close_game):
                         running = False
-                    if event.ui_element == btn_menu:
+                    if event.ui_element in (btn_menu, btn_menu_for_win, btn_menu_for_lost):
                         status = MENU
+                    if event.ui_element in levels_btns:
+                        global current_level
+                        current_level = LEVELS_DIR[levels_btns.index(event.ui_element)]
+                        load_rules()
+
+                        field = GameField("map.tmx", [78, 79, 80, 48, 49, 50, 108, 109, 110, 101], 101)
+                        hero = Hero(game_rules_list["start_character_pos"])
+                        enemy = Enemy(game_rules_list["enemy_pos1"], game_rules_list["enemy1_start"],
+                                      game_rules_list["enemy1_stop"])
+                        game = Game(field, hero, enemy)
+                        status = GAME
 
             manager.process_events(event)
         manager.update(time_delta)
 
         screen.fill((229, 213, 164))
 
-        if not game_over and not pause:
+        if status == GAME:
             game.update_hero()
-        if not pause:
-            game.update_conf()
             camera.update(hero)
             dragon.move((camera.dx, camera.dy), hero)
 
-        game.render(screen, (camera.dx, camera.dy))
-        all_sprites.draw(screen)
-        all_sprites.update()
+        if status in (GAME, PAUSE):
+            game.render(screen, (camera.dx, camera.dy))
+            all_sprites.draw(screen)
+            all_sprites.update()
+
+        effects_sprites.update()
+        effects_sprites.draw(screen)
 
         menu(status, screen)
         manager.draw_ui(screen)
 
-        if game.check_win():
-            game_over = True
-            show_message(screen, "You won!")
-            create_particles((WINDOW_WIDTH // 2, 0))
-        if game.check_lose():
-            game_over = True
-            show_message(screen, "You lost!")
+        if game.check_win() and status == GAME:
+            status = WIN
+        if game.check_lose() and status == GAME:
+            status = LOSE
 
         clock.tick(FPS)
         pygame.display.flip()
     pygame.quit()
 
 
-if __name__ == '__main__':
-    pygame.mixer.init()
-    game_sound = pygame.mixer.Sound('sounds/soundtrack1.mp3')
-    menu_sound = pygame.mixer.Sound('sounds/menu.mp3')
-    media_player = Player([game_sound, menu_sound])
-    pygame.init()
-
-    current_level = "level1"
-    infoObject = pygame.display.Info()
-    WINDOW_SIZE = WINDOW_WIDTH, WINDOW_HEIGHT = infoObject.current_w, infoObject.current_h
-    screen_rect = (0, 0, WINDOW_WIDTH, WINDOW_HEIGHT)
+def load_rules():
     game_rules = open(f"{MAPS_DIR}/{current_level}/game_rules.txt",
                       mode="r", encoding="utf8")
     game_rules_list = dict()
     for line in game_rules.readlines():
         line = line.split(";")
         game_rules_list[line[0]] = list(map(int, line[1].strip("\n").split(",")))
+    return game_rules_list
+
+
+if __name__ == '__main__':
+    pygame.mixer.init()
+    game_sound = pygame.mixer.Sound('sounds/soundtrack1.mp3')
+    menu_sound = pygame.mixer.Sound('sounds/menu.mp3')
+    lost_sound = pygame.mixer.Sound('sounds/lost.mp3')
+    win_sound = pygame.mixer.Sound('sounds/win.mp3')
+    media_player = Player([game_sound, menu_sound, lost_sound, win_sound])
+    pygame.init()
+
+    current_level = "level1"
+    infoObject = pygame.display.Info()
+    WINDOW_SIZE = WINDOW_WIDTH, WINDOW_HEIGHT = infoObject.current_w, infoObject.current_h
+    screen_rect = (0, 0, WINDOW_WIDTH, WINDOW_HEIGHT)
+    game_rules_list = load_rules()
 
     all_sprites = pygame.sprite.Group()
+    effects_sprites = pygame.sprite.Group()
 
     manager = pygame_gui.UIManager(WINDOW_SIZE)
 
@@ -457,5 +468,39 @@ if __name__ == '__main__':
         text="Volume",
         manager=manager
     )
+
+    btn_menu_for_win = pygame_gui.elements.UIButton(
+        relative_rect=pygame.Rect((WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT // 2 + 100), (200, 70)),
+        text="Menu",
+        manager=manager
+    )
+
+    btn_menu_for_lost = pygame_gui.elements.UIButton(
+        relative_rect=pygame.Rect((WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT // 2 + 100), (200, 70)),
+        text="Menu",
+        manager=manager
+    )
+
+    btn_settings = pygame_gui.elements.UIButton(
+        relative_rect=pygame.Rect((WINDOW_WIDTH // 2 + 40, WINDOW_HEIGHT - 200), (200, 70)),
+        text="Settings",
+        manager=manager
+    )
+
+    btn_close_game = pygame_gui.elements.UIButton(
+        relative_rect=pygame.Rect((WINDOW_WIDTH // 2 - 240, WINDOW_HEIGHT - 200), (200, 70)),
+        text="Exit game",
+        manager=manager
+    )
+
+    levels_btns = list()
+    for i in range(len(LEVELS_DIR)):
+        btn = pygame_gui.elements.UIButton(
+            relative_rect=pygame.Rect((WINDOW_WIDTH // 2 - 300 + 100 * (i % 3),
+                                       WINDOW_HEIGHT // 2 - 300 + 100 * (i // 3)), (70, 70)),
+            text=f"{i + 1}",
+            manager=manager
+        )
+        levels_btns.append(btn)
 
     main()
