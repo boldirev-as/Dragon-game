@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.4" tiledversion="2020.12.18" orientation="orthogonal" renderorder="right-down" width="64" height="40" tilewidth="32" tileheight="32" infinite="0" nextlayerid="6" nextobjectid="1">
  <tileset firstgid="1" name="hyptosis_tile-art-batch-1-removebg" tilewidth="32" tileheight="32" tilecount="900" columns="30">
-  <image source="hyptosis_tile-art-batch-1-removebg.png" width="960" height="960"/>
- </tileset>
- <tileset firstgid="901" name="hyptosis_tile-art-batch-1-removebg" tilewidth="32" tileheight="32" tilecount="900" columns="30">
-  <image source="../level1/hyptosis_tile-art-batch-1-removebg.png" width="960" height="960"/>
+  <image source="../hyptosis_tile-art-batch-1-removebg.png" width="960" height="960"/>
  </tileset>
  <layer id="4" name="Слой тайлов 3" width="64" height="40">
   <data encoding="base64" compression="zlib">
@@ -13,7 +10,7 @@
  </layer>
  <layer id="3" name="Слой тайлов 2" width="64" height="40">
   <data encoding="base64" compression="zlib">
-   eJztllkOgjAURZsoO1G/nHfg8OWEO/DLxHkH/jrvzg15G9IEEbGFmhfoO8mJQwq8U4lBCIZhGIZJplemnoCGZyl4XTjSX0FnFdbKQbvqP4Y+q++Khuzqo3MAh5FeG911T4gGbMIWbMMO7Hp25k+LavPFpzb7R+gcwwmcwhn04ZyoP6k7qg1W6FzDDdzCHdzDQw76w+u+kXSs9ITOM7zAK7zBO3xo9Ovcg6b3p257Fk3+Q+LWmmrab7IHcu1SvBu9flK3rRZb/b/Opc6Xdc//9fvFXSPNcXHv80aRn0t0cX0PXG/nfuop6HC9X+L6HnA/9QS0cD/1BLRwP/UEtHA/9QS0cL/be8D93O8y3E89AZMnXvQNnWM=
+   eJzt09EJgDAMQMFu6BTuv4L4J6IQrIJJ7iC/hZe2YwDQ2RKYiiLd0cnKDrR3fgNdu4/efgNZdvN195/bd0961tPcnZlV5vuc1bX7SqV/PqN6HwAAAABARRtbyD3C
   </data>
  </layer>
  <layer id="1" name="Слой тайлов 1" width="64" height="40">

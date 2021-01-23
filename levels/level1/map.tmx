@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.4" tiledversion="2020.12.18" orientation="orthogonal" renderorder="right-down" width="64" height="40" tilewidth="32" tileheight="32" infinite="0" nextlayerid="6" nextobjectid="1">
  <tileset firstgid="1" name="hyptosis_tile-art-batch-1-removebg" tilewidth="32" tileheight="32" tilecount="900" columns="30">
-  <image source="hyptosis_tile-art-batch-1-removebg.png" width="960" height="960"/>
+  <image source="../hyptosis_tile-art-batch-1-removebg.png" width="960" height="960"/>
  </tileset>
  <layer id="4" name="Слой тайлов 3" width="64" height="40">
   <data encoding="base64" compression="zlib">
