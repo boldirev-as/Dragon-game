@@ -157,13 +157,6 @@ class Game:
         self.enemy_start = False
 
     def render(self, screen, koeff):
-        if self.hero.x == self.enemy.must_start_x and \
-                self.hero.y == self.enemy.must_start_y:
-            self.enemy_start = not self.enemy_start
-        if self.hero.x == self.enemy.must_stop_x and \
-                self.hero.y == self.enemy.must_stop_y:
-            self.enemy_start = not self.enemy_start
-
         self.lab.render(screen, koeff)
         # self.hero.render(screen, koeff)
         self.enemy.render(screen, koeff)
@@ -181,6 +174,13 @@ class Game:
 
         if self.lab.is_free((next_x, next_y)):
             self.hero.set_position((next_x, next_y))
+
+        if self.hero.x == self.enemy.must_start_x and \
+                self.hero.y == self.enemy.must_start_y:
+            self.enemy_start = not self.enemy_start
+        if self.hero.x == self.enemy.must_stop_x and \
+                self.hero.y == self.enemy.must_stop_y:
+            self.enemy_start = not self.enemy_start
 
     def move_enemy(self):
         if self.enemy_start:
@@ -284,28 +284,25 @@ def menu(status, screen):
         for wdg in wdgts:
             wdg.hide() if hide else wdg.show()
 
-    pause_btns = [btn_resume, btn_close, btn_menu, btn_volume]
+    pause_btns = [btn_resume, btn_close, btn_menu]
     win_btns = [btn_menu_for_win]
     lose_btns = [btn_menu_for_lost]
-    menu_btns = [*levels_btns, btn_settings, btn_close_game]
+    menu_btns = [*levels_btns, btn_close_game]
+    hide(win_btns + lose_btns + menu_btns + [btn_pause] + pause_btns, hide=True)
     if status == GAME:
         media_player.play(0)
-        hide(pause_btns + win_btns + lose_btns + menu_btns, hide=True)
         hide([btn_pause], hide=False)
     elif status == WIN:
         media_player.play(3)
         show_message(screen, "YOU WIN!")
-        hide(pause_btns + lose_btns + menu_btns + [btn_pause], hide=True)
         hide(win_btns, hide=False)
         create_particles((WINDOW_WIDTH // 2, 0))
     elif status == LOSE:
         media_player.play(2)
         show_message(screen, "YOU LOST!")
-        hide(pause_btns + win_btns + menu_btns + [btn_pause], hide=True)
         hide(lose_btns, hide=False)
     elif status == MENU:
         show_message(screen, "LEVELS", cords=(WINDOW_WIDTH // 2, 30))
-        hide(pause_btns + win_btns + menu_btns + lose_btns + [btn_pause], hide=True)
         hide(menu_btns, hide=False)
         media_player.play(1)
     elif status == PAUSE:
@@ -313,7 +310,6 @@ def menu(status, screen):
         screen.blit(image, (WINDOW_WIDTH // 2 - image.get_width() // 2,
                             WINDOW_HEIGHT // 2 - image.get_height() // 2))
         hide(pause_btns, hide=False)
-        hide(win_btns + lose_btns + menu_btns + [btn_pause], hide=True)
 
 
 class Player:
@@ -364,7 +360,8 @@ def main():
                         status = GAME
                     if event.ui_element in (btn_close, btn_close_game):
                         running = False
-                    if event.ui_element in (btn_menu, btn_menu_for_win, btn_menu_for_lost):
+                    if event.ui_element in (btn_menu, btn_menu_for_win,
+                                            btn_menu_for_lost):
                         status = MENU
                     if event.ui_element in levels_btns:
                         global current_level
@@ -452,7 +449,7 @@ if __name__ == '__main__':
     )
 
     btn_close = pygame_gui.elements.UIButton(
-        relative_rect=pygame.Rect((WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT // 2 - 200), (200, 70)),
+        relative_rect=pygame.Rect((WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT // 2 - 100), (200, 70)),
         text="Close game",
         manager=manager
     )
@@ -460,12 +457,6 @@ if __name__ == '__main__':
     btn_menu = pygame_gui.elements.UIButton(
         relative_rect=pygame.Rect((WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT // 2), (200, 70)),
         text="Menu",
-        manager=manager
-    )
-
-    btn_volume = pygame_gui.elements.UIButton(
-        relative_rect=pygame.Rect((WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT // 2 - 100), (200, 70)),
-        text="Volume",
         manager=manager
     )
 
@@ -481,14 +472,8 @@ if __name__ == '__main__':
         manager=manager
     )
 
-    btn_settings = pygame_gui.elements.UIButton(
-        relative_rect=pygame.Rect((WINDOW_WIDTH // 2 + 40, WINDOW_HEIGHT - 200), (200, 70)),
-        text="Settings",
-        manager=manager
-    )
-
     btn_close_game = pygame_gui.elements.UIButton(
-        relative_rect=pygame.Rect((WINDOW_WIDTH // 2 - 240, WINDOW_HEIGHT - 200), (200, 70)),
+        relative_rect=pygame.Rect((WINDOW_WIDTH // 2 - 100, WINDOW_HEIGHT - 200), (200, 70)),
         text="Exit game",
         manager=manager
     )

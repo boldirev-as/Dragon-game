@@ -10,3 +10,4 @@ WIN = 1
 LOSE = 2
 MENU = 3
 GAME = 4
+SETTINGS = 5
