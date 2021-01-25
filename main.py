@@ -365,6 +365,8 @@ def main():
                         status = MENU
                     if event.ui_element in levels_btns:
                         global current_level
+                        for sprite in effects_sprites.sprites():
+                            effects_sprites.remove(sprite)
                         current_level = LEVELS_DIR[levels_btns.index(event.ui_element)]
                         load_rules()
 
